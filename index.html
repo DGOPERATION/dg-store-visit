@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Store Visit">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="application-name" content="D&G Store Visit">
+<meta name="description" content="Dolce & Gabbana — Outil d'audit de boutique">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="57x57"   href="icons/icon-57.png">
+<link rel="apple-touch-icon" sizes="60x60"   href="icons/icon-60.png">
+<link rel="apple-touch-icon" sizes="72x72"   href="icons/icon-72.png">
+<link rel="apple-touch-icon" sizes="76x76"   href="icons/icon-76.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icons/icon-114.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #F7F4EF;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE6;
+  --border: #DDD8CE;
+  --text: #1A1612;
+  --text2: #6B6560;
+  --text3: #9E9890;
+  --gold: #9B7B3A;
+  --gold-bg: #F5EDD8;
+  --gold-border: #C9A85C;
+  --red: #B83232;
+  --red-bg: #FBE9E9;
+  --orange: #C07020;
+  --orange-bg: #FEF3E8;
+  --green: #2A7A4E;
+  --green-bg: #E8F5EE;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html {
+  /* Ensure full height including safe areas */
+  height: -webkit-fill-available;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--text);
+  padding: 12px 20px 12px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(184,150,62,0.25);
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: #fff;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.header-logo span { color: var(--gold-border); }
+.header-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.15); }
+.header-sub {
+  font-size: 9px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.score-chip {
+  background: var(--gold);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  min-width: 64px;
+  text-align: center;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; animation: slideUp 0.25s ease; }
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── INTRO ── */
+.intro-body { padding: 24px 16px 120px; }
+.intro-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.intro-title span { color: var(--gold); }
+.intro-desc { font-size: 12px; color: var(--text2); margin-bottom: 28px; }
+
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.form-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 8px;
+}
+.form-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--gold-border); background: #fff; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn-primary {
+  width: 100%;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+.btn-primary:active { background: #333; }
+
+/* ── CATEGORY LIST ── */
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 12px 16px 8px;
+  background: var(--bg);
+}
+.cat-list { padding: 0 16px 100px; display: flex; flex-direction: column; gap: 8px; }
+
+.cat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: var(--shadow);
+}
+.cat-card:active { transform: scale(0.98); box-shadow: none; }
+
+.cat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: var(--border);
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.cat-info { flex: 1; min-width: 0; }
+.cat-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.cat-badge {
+  font-size: 14px;
+  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface2);
+  color: var(--text3);
+}
+.cat-badge.s-low { background: var(--red-bg); color: var(--red); }
+.cat-badge.s-mid { background: var(--orange-bg); color: var(--orange); }
+.cat-badge.s-high { background: var(--green-bg); color: var(--green); }
+.cat-arrow { color: var(--border); font-size: 18px; flex-shrink: 0; }
+
+/* ── BOTTOM BAR ── */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(247,244,239,0.96);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  backdrop-filter: blur(12px);
+  z-index: 99;
+}
+.btn-back {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-next {
+  flex: 1;
+  background: var(--text);
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+}
+.btn-next:active { background: #333; }
+
+/* ── CATEGORY DETAIL ── */
+.cat-detail-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 16px 16px;
+  position: sticky;
+  top: 57px;
+  z-index: 90;
+}
+.cat-detail-step { font-size: 10px; font-weight: 600; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 4px; }
+.cat-detail-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); }
+
+.items-container { padding: 12px 16px 100px; display: flex; flex-direction: column; gap: 10px; }
+
+.item-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: border-color 0.2s;
+}
+.item-card.scored-1 { border-color: #E8AAAA; }
+.item-card.scored-2 { border-color: #E8C89A; }
+.item-card.scored-3 { border-color: #9EC9B2; }
+.item-card.scored-na { border-color: #BDB8B0; }
+
+.item-body { padding: 14px 14px 12px; }
+.item-text { font-size: 13px; color: var(--text); line-height: 1.55; margin-bottom: 14px; }
+
+/* SCORE BUTTONS */
+.score-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.score-btn {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px 4px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+  transition: all 0.15s;
+  -webkit-appearance: none;
+}
+.score-btn .sn {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: var(--text2);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.score-btn .sl { font-size: 9px; font-weight: 500; color: var(--text3); letter-spacing: 0.3px; }
+
+.score-btn:active { transform: scale(0.96); }
+
+.score-btn.active-1 { border-color: var(--red); background: var(--red-bg); }
+.score-btn.active-1 .sn { color: var(--red); }
+.score-btn.active-1 .sl { color: var(--red); }
+
+.score-btn.active-2 { border-color: var(--orange); background: var(--orange-bg); }
+.score-btn.active-2 .sn { color: var(--orange); }
+.score-btn.active-2 .sl { color: var(--orange); }
+
+.score-btn.active-3 { border-color: var(--green); background: var(--green-bg); }
+.score-btn.active-3 .sn { color: var(--green); }
+.score-btn.active-3 .sl { color: var(--green); }
+
+.btn-na {
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  padding: 6px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text3);
+  cursor: pointer;
+}
+.btn-na.na-on { border-color: var(--text2); background: var(--surface2); color: var(--text); }
+
+/* EXTRAS (notes + photos) — collapsible */
+.item-extras { border-top: 1px solid var(--border); }
+
+.extras-toggle {
+  width: 100%;
+  background: var(--surface2);
+  border: none;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+}
+.extras-toggle .toggle-icons { display: flex; gap: 12px; align-items: center; }
+.extras-toggle .badge {
+  background: var(--gold);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.extras-body { padding: 12px 14px 14px; display: none; }
+.extras-body.open { display: block; }
+
+.notes-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  min-height: 72px;
+  transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+.notes-input:focus { border-color: var(--gold-border); background: #fff; }
+.notes-input::placeholder { color: var(--text3); font-size: 12px; }
+
+/* PHOTO SECTION */
+.photos-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.photos-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+
+.photo-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  position: relative;
+}
+.photo-wrapper {
+  position: relative;
+  width: 70px;
+  height: 70px;
+}
+.photo-wrapper img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 1.5px solid var(--border); display: block; }
+.photo-del {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px; height: 20px;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.btn-add-photo {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--gold-border);
+  background: var(--gold-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gold);
+  gap: 3px;
+}
+.btn-add-photo svg { width: 22px; height: 22px; }
+.btn-add-photo span { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; }
+input[type="file"] { display: none; }
+
+/* PHOTO VIEWER */
+.photo-viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.photo-viewer.open { display: flex; }
+.photo-viewer img { max-width: 94vw; max-height: 86vh; border-radius: 8px; object-fit: contain; }
+.viewer-close {
+  position: absolute;
+  top: 20px; right: 20px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── SUMMARY ── */
+.summary-hero {
+  background: var(--text);
+  padding: 28px 20px 24px;
+  text-align: center;
+}
+.summary-hero-label { font-size: 9px; letter-spacing: 3px; color: #888; text-transform: uppercase; margin-bottom: 12px; }
+.score-ring-wrap { position: relative; width: 130px; height: 130px; margin: 0 auto 12px; }
+.score-ring-wrap svg { transform: rotate(-90deg); }
+.score-ring-center {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  text-align: center;
+}
+.score-big { font-family: 'Playfair Display', serif; font-size: 38px; color: #fff; line-height: 1; }
+.score-denom { font-size: 10px; color: #888; letter-spacing: 1px; }
+.summary-meta { font-size: 12px; color: #aaa; }
+
+.summary-body { padding: 16px 16px 120px; }
+
+.summary-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.sum-name { flex: 1; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text); }
+.sum-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.sum-bar-fill { height: 100%; border-radius: 2px; }
+.sum-score { font-size: 14px; font-weight: 700; width: 34px; text-align: right; }
+
+.feedback-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.fb-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+.fb-textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  min-height: 80px;
+}
+.fb-textarea:focus { border-color: var(--gold-border); background: #fff; }
+.fb-textarea::placeholder { color: var(--text3); font-size: 12px; }
+
+.export-section { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.btn-export {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+}
+.btn-export-pdf { background: var(--text); color: #fff; }
+.btn-export-csv { background: var(--gold-bg); color: var(--gold); border: 1.5px solid var(--gold-border); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.25s;
+  z-index: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239B7B3A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+</style>
+</head>
+<body>
+
+<!-- PHOTO VIEWER -->
+<div class="photo-viewer" id="photo-viewer" onclick="closeViewer()">
+  <button class="viewer-close" onclick="closeViewer()">✕</button>
+  <img id="viewer-img" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-left">
+    <div class="header-logo">D<span>&</span>G</div>
+    <div class="header-divider"></div>
+    <div class="header-sub">Store Visit</div>
+  </div>
+  <div class="score-chip" id="global-chip">—</div>
+</div>
+
+<!-- ═══ SCREEN: INTRO ═══ -->
+<div class="screen active" id="screen-intro">
+  <div class="intro-body">
+    <div class="intro-title">Store<br><span>Visit</span> Report</div>
+    <div class="intro-desc">Renseignez les informations de la visite pour démarrer l'audit.</div>
+
+    <div class="form-card">
+      <label class="form-label">Date de visite</label>
+      <input type="date" class="form-input" id="visit-date">
+    </div>
+
+    <div class="form-card">
+      <label class="form-label">Boutique</label>
+      <select class="form-input" id="visit-store">
+        <option value="">Sélectionner une boutique...</option>
+        <option>Paris Montaigne</option>
+        <option>Paris Faubourg</option>
+        <option>Cannes</option>
+        <option>Nice</option>
+        <option>Saint-Tropez</option>
+        <option>Ritz Paris</option>
+        <option>Cap Ferrat</option>
+        <option>Galeries Lafayette Paris Haussmann</option>
+        <option>Monte-Carlo</option>
+        <option>Monte-Carlo Kids</option>
+      </select>
+    </div>
+
+    <div class="form-card">
+      <label class="form-label">Auditeurs</label>
+      <div class="form-row">
+        <input type="text" class="form-input" id="auditor1" placeholder="Auditeur 1">
+        <input type="text" class="form-input" id="auditor2" placeholder="Auditeur 2 (opt.)">
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startAudit()">Démarrer l'audit →</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: LIST ═══ -->
+<div class="screen" id="screen-list">
+  <div style="padding: 14px 16px 10px; background: var(--surface); border-bottom: 1px solid var(--border);">
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2);" id="list-info">12 catégories</div>
+  </div>
+  <div class="cat-list" id="cat-list"></div>
+  <div class="bottom-bar">
+    <button class="btn-back" onclick="go('intro')">← Infos</button>
+    <button class="btn-next" onclick="showSummary()">Récapitulatif →</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: CATEGORY ═══ -->
+<div class="screen" id="screen-category">
+  <div class="cat-detail-header" id="cat-detail-header"></div>
+  <div class="items-container" id="items-container"></div>
+  <div class="bottom-bar">
+    <button class="btn-back" onclick="go('list')">← Liste</button>
+    <button class="btn-next" id="btn-cat-next" onclick="nextCat()">Suivant →</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: SUMMARY ═══ -->
+<div class="screen" id="screen-summary">
+  <div class="summary-hero">
+    <div class="summary-hero-label">Résumé d'audit</div>
+    <div class="score-ring-wrap">
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <circle cx="65" cy="65" r="55" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="9"/>
+        <circle id="ring-fill" cx="65" cy="65" r="55" fill="none" stroke="#C9A85C"
+          stroke-width="9" stroke-dasharray="345.6" stroke-dashoffset="345.6"
+          stroke-linecap="round" style="transition:stroke-dashoffset 1s ease 0.2s"/>
+      </svg>
+      <div class="score-ring-center">
+        <div class="score-big" id="sum-score-num">—</div>
+        <div class="score-denom">/ 3.0</div>
+      </div>
+    </div>
+    <div class="summary-meta" id="sum-meta"></div>
+  </div>
+
+  <div class="summary-body">
+    <div id="summary-rows"></div>
+
+    <div class="feedback-card">
+      <div class="fb-label">General Feedback</div>
+      <textarea class="fb-textarea" id="general-feedback" placeholder="Observations générales, points d'attention..." rows="4"></textarea>
+    </div>
+
+    <div class="feedback-card">
+      <div class="fb-label">Priority To Do's</div>
+      <textarea class="fb-textarea" id="priority-todos" placeholder="Actions prioritaires à mener..." rows="3"></textarea>
+    </div>
+
+    <div class="export-section">
+      <button class="btn-export btn-export-pdf" onclick="exportPDF()">⬇ Exporter en PDF</button>
+      <button class="btn-export btn-export-csv" onclick="exportCSV()">⬇ Exporter CSV pour Excel</button>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-back" onclick="go('list')">← Modifier</button>
+    <button class="btn-next" onclick="exportPDF()">Export PDF</button>
+  </div>
+</div>
+
+<script>
+// ── CATS v2.0 — updated vs Store Handbook v5.5 ──
+const CATS = [
+  { id:'entrance', name:'Entrance & Set Up', items:[
+    'Windows are clean and properly set up',
+    'Logo well positioned, in good condition and lights properly working',
+    'Floor / Furniture / Carpets / Sittings clean and in good condition, without heavy scratches',
+    'Fitting rooms in good condition, no dusty curtains or finger prints on mirrors',
+    'Temperature is pleasant and air conditioning/heating is properly working'
+  ]},
+  { id:'ict', name:'ICT Devices & Equipment', items:[
+    'People counter device is properly working',
+    'CCTV are correctly oriented and working',
+    'Phones, computers and WiFi network are properly working',
+    'All released apps & digital tools (DG Look, DG Smart…) downloaded and regularly used',
+    'Music & audio players functioning well at adequate volume. Playlist is updated'
+  ]},
+  { id:'cash', name:'Cash Desk & Management', items:[
+    'Cleaning and maintenance condition as standard',
+    'All general and institutional stationery are available (CRM cards, business cards, envelopes, delivery cards…)',
+    'Bill folder, signature pad and selling tickets book correctly used',
+    'WeChat and Alipay signage correctly placed (where available)',
+    'Till & backoffice procedures respected (Daily Cash Report, Float, Cash Draw, Deposit, Petty Cash…)',
+    'Sensor detachers stored in BOH area — kept in safe during non-business hours'
+  ]},
+  { id:'display', name:'Product Display & Shopfloor', items:[
+    'No precious leather items displayed on windows or kept in drawers/cabinets',
+    'Security tags and selling tickets kept hidden or in selling book',
+    'Items well steamed, no finger prints',
+    'Shoes displayed by pair or right foot only',
+    'Quantity of items in drawers/cabinets adequate to space and well preserved'
+  ]},
+  { id:'security', name:'Security', items:[
+    'Sensors system is functioning well',
+    'Safes are locked and protected (W&J safe: minimum European level III with time lock active at closing)',
+    'Keys and alarm code managed only by appointed managers upon signature of assignment form',
+    'RTW, Belts, Eyewear, Folded, SLG are alarmed as per procedure',
+    'Display counts are performed 4 times per day (opening, pre-lunch, post-lunch, closing)',
+    'CCTV cameras checked by Store Manager at least once per day'
+  ]},
+  { id:'wj', name:'Watches & Jewellery', items:[
+    'Showcases and cabinets kept locked and clean without finger prints or stains',
+    'W&J properly displayed on Bordeaux trays inside the drawers',
+    'Rainbow Cake: each watch secured through acrylic cable so it cannot be detached (where available)',
+    'Service materials stored inside drawers: Storage Kit (Bordeaux trays), Cleaning Kit, Technical Kit and white gloves',
+    'Pieces stored in safe as per guidelines — Jewels in transparent bags in acrylic boxes, Watches in original boxes with barcode visible',
+    'Guarantee certificates filled, dated, stamped and signed by CA — given to Client at purchase'
+  ]},
+  { id:'kits', name:'Store Kits', items:[
+    'Tailoring kit complete and hidden close to fitting rooms',
+    'Shoe kit complete and hidden close to shoe area',
+    'Service kit complete and hidden in BOH area',
+    'Sunglasses kit complete and hidden close to sunglasses area (mobile detacher, plexi tray, microfiber cloth)',
+    'Face covers kit complete, dry cleaned and ironed — hidden close to fitting rooms',
+    'Cleaning kit complete and used during business hours',
+    'Black dress gowns cleaned and ironed (where available)'
+  ]},
+  { id:'stock', name:'Stock Management', items:[
+    'Stockroom clear, organized by gender and macro category',
+    'Items stored exactly as received from the factory (hangers, boxes, plastic tubes…)',
+    'Colored dots applied as per procedure (red = on display, gold/blue = markdown)',
+    'Precious leather items in original boxes in dedicated stockroom area',
+    'Delicate RTW items kept with plastic covers (lace, silk, fur, leather, embellished, white/light colors) — resistant fabrics (denim, cotton, jersey) stored without covers',
+    'Fast movers items placed closest to shopfloor entrance',
+    'Dividers present and properly labeled',
+    'Bags in original boxes, stored by family then SKU',
+    'Shoes stored by merchandising class then SKU',
+    "SLGs stored by sub merchandising class then SKU",
+    "SLGs protected with plastic covers if box is open",
+    'Sunglasses labeled and organized by eyewear number',
+    'Fragrances and make-up managed FIFO (first in first out) — expiry dates checked, expired products set aside',
+    'Fragrances packaging free of any tape or stickers — Rose Glow Cushion stored upright at max 40°C',
+    'Special areas organized and labeled (on hold, alterations, delivery, damaged…)',
+    'Visual tools protected with plastic cover/bubble wrap in dedicated area',
+    'Common areas clean, tidy and organized (kitchen, break room, changing rooms, offices…)'
+  ]},
+  { id:'area1x', name:'1X Area', items:[
+    'Items are well organized by category',
+    'No precious leather items placed in this area',
+    'All RTW items hung on wooden hangers and kept inside plastic covers',
+    "White tissue paper placed on shelves to protect shoes' soles",
+    'Bags kept with their own black cotton covers',
+    'All products (except shoes) kept with sensors at all times'
+  ]},
+  { id:'packaging', name:'Packaging', items:[
+    'All packaging items available (shopping bags, gift boxes, tissue paper, rain covers, ribbons, stickers…)',
+    'The packaging area is tidy and organized — tissue paper stored flat and neat',
+    'Detachers available and operational on packaging table',
+    'Extra stock of packaging organized in dedicated area in stockroom',
+    'W&J packaging preserved and stored separately for reuse (sales, transfers, returns)'
+  ]},
+  { id:'clientsvc', name:'Client Services', items:[
+    'On Consignment: not older than 2 weeks (if authorized by SM) / not older than 1 month (if authorized by Corporate)',
+    'Gifts: all have SM or Corporate authorization — movement processed in system on same day',
+    'On Hold: not older than 7 days — after 1 week, client contacted and 50% deposit requested if confirmed',
+    'Alterations: only DG items. Alteration form in 3 copies. Items organized by in/out dates in dedicated BOH area',
+    'Colored cards always present and filled in with all required info (date, client name, phone, pieces, expiry)'
+  ]},
+  { id:'uniform', name:'Uniform & Grooming', items:[
+    'Great welcoming coverage and standing — no iPhones held in hand on sales floor',
+    'Every staff member wearing the correct and complete set of uniform',
+    'Uniform pieces and white gloves clean, well pressed and in good condition',
+    'iPhone kept inside mini bag (female staff) or in pocket (male staff)',
+    'Make up (light and natural) and hair style coherent with corporate grooming guidelines',
+    'Tattoos not visible on face — piercings discreet and not distracting',
+    'No personal jewellery or competitor watches (smart watches are allowed — DG eyewear frames mandatory)'
+  ]}
+];
+
+const ST = {
+  date:'', store:'', a1:'', a2:'',
+  scores:{},   // key: catId_i => 1|2|3|'na'
+  notes:{},    // key: catId_i => string
+  photos:{},   // key: catId_i => [dataURL,...]
+  currentCat: 0
+};
+
+const K = (cid,i) => `${cid}_${i}`;
+
+document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
+
+// ── NAV ──
+function go(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── START ──
+function startAudit() {
+  ST.date  = document.getElementById('visit-date').value;
+  ST.store = document.getElementById('visit-store').value;
+  ST.a1    = document.getElementById('auditor1').value.trim();
+  ST.a2    = document.getElementById('auditor2').value.trim();
+  if (!ST.store || !ST.a1) { toast('Boutique et auditeur 1 requis'); return; }
+  renderList();
+  go('list');
+}
+
+// ── GLOBAL SCORE ──
+function catScore(cat) {
+  const vals = cat.items.map((_,i)=>ST.scores[K(cat.id,i)]).filter(v=>v&&v!=='na').map(Number);
+  if (!vals.length) return null;
+  return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2);
+}
+function globalScore() {
+  const cs = CATS.map(c=>parseFloat(catScore(c))).filter(v=>!isNaN(v));
+  if (!cs.length) return null;
+  return (cs.reduce((a,b)=>a+b,0)/cs.length).toFixed(2);
+}
+function scoreColor(v) {
+  if (v===null) return '#9E9890';
+  return v<1.8?'#B83232':v<2.5?'#C07020':'#2A7A4E';
+}
+function badgeClass(v) {
+  if (v===null) return '';
+  return v<1.8?'s-low':v<2.5?'s-mid':'s-high';
+}
+function updateChip() {
+  const s = globalScore();
+  const chip = document.getElementById('global-chip');
+  chip.textContent = s ? s+' / 3' : '—';
+  chip.style.background = s ? scoreColor(parseFloat(s)) : '#9B7B3A';
+}
+
+// ── CATEGORY LIST ──
+function renderList() {
+  const done = CATS.filter(c=>catScore(c)!==null).length;
+  document.getElementById('list-info').textContent = `${done} / ${CATS.length} catégories complétées`;
+
+  document.getElementById('cat-list').innerHTML = CATS.map((cat,idx)=>{
+    const s = catScore(cat);
+    const sf = s?parseFloat(s):null;
+    const prog = cat.items.filter((_,i)=>ST.scores[K(cat.id,i)]!==undefined).length / cat.items.length;
+    const photoCount = cat.items.reduce((n,_,i)=>{const p=ST.photos[K(cat.id,i)];return n+(p?p.length:0);},0);
+    return `<div class="cat-card" onclick="openCat(${idx})">
+      <div class="cat-num">${String(idx+1).padStart(2,'0')}</div>
+      <div class="cat-info">
+        <div class="cat-name">${cat.name}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${prog*100}%"></div></div>
+      </div>
+      ${photoCount>0?`<div style="font-size:11px;color:#9B7B3A;white-space:nowrap">📷 ${photoCount}</div>`:''}
+      <div class="cat-badge ${badgeClass(sf)}">${s||'—'}</div>
+      <div class="cat-arrow">›</div>
+    </div>`;
+  }).join('');
+  updateChip();
+}
+
+// ── OPEN CATEGORY ──
+function openCat(idx) {
+  ST.currentCat = idx;
+  const cat = CATS[idx];
+  document.getElementById('cat-detail-header').innerHTML = `
+    <div class="cat-detail-step">Catégorie ${idx+1} / ${CATS.length}</div>
+    <div class="cat-detail-title">${cat.name}</div>`;
+  document.getElementById('btn-cat-next').textContent = idx < CATS.length-1 ? 'Catégorie suivante →' : 'Récapitulatif →';
+  renderItems(idx);
+  go('category');
+}
+
+function renderItems(idx) {
+  const cat = CATS[idx];
+  document.getElementById('items-container').innerHTML = cat.items.map((item,i)=>{
+    const k = K(cat.id,i);
+    const sc = ST.scores[k];
+    const note = ST.notes[k]||'';
+    const photos = ST.photos[k]||[];
+    const hasExtras = note||photos.length;
+
+    const cls = sc===1?'scored-1':sc===2?'scored-2':sc===3?'scored-3':sc==='na'?'scored-na':'';
+    const extrasCount = (note?1:0)+photos.length;
+
+    return `<div class="item-card ${cls}" id="icard-${k}">
+      <div class="item-body">
+        <div class="item-text">${item}</div>
+        <div class="score-row">
+          <button class="score-btn ${sc===1?'active-1':''}" onclick="setScore('${cat.id}',${i},1)">
+            <span class="sn">1</span><span class="sl">Not standard</span>
+          </button>
+          <button class="score-btn ${sc===2?'active-2':''}" onclick="setScore('${cat.id}',${i},2)">
+            <span class="sn">2</span><span class="sl">To improve</span>
+          </button>
+          <button class="score-btn ${sc===3?'active-3':''}" onclick="setScore('${cat.id}',${i},3)">
+            <span class="sn">3</span><span class="sl">Compliant</span>
+          </button>
+        </div>
+        <button class="btn-na ${sc==='na'?'na-on':''}" onclick="setScore('${cat.id}',${i},'na')">N / A</button>
+      </div>
+      <div class="item-extras">
+        <button class="extras-toggle" onclick="toggleExtras('${k}')">
+          <span>📝 Notes &amp; Photos</span>
+          <div class="toggle-icons">
+            ${extrasCount>0?`<span class="badge">${extrasCount}</span>`:''}
+            <span id="arrow-${k}">${hasExtras?'▲':'▼'}</span>
+          </div>
+        </button>
+        <div class="extras-body ${hasExtras?'open':''}" id="extras-${k}">
+          <textarea class="notes-input" placeholder="Observations, remarques..." 
+            onchange="setNote('${cat.id}',${i},this.value)">${note}</textarea>
+          <div class="photos-label">Photos</div>
+          <div class="photos-grid" id="photos-${k}">
+            ${photos.map((p,pi)=>`
+              <div class="photo-wrapper">
+                <img src="${p}" onclick="viewPhoto('${p}')" />
+                <button class="photo-del" onclick="deletePhoto('${k}',${pi})">×</button>
+              </div>`).join('')}
+            <label class="btn-add-photo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Ajouter</span>
+              <input type="file" accept="image/*" capture="environment" multiple onchange="addPhotos('${k}',this)">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExtras(k) {
+  const body = document.getElementById('extras-'+k);
+  const arrow = document.getElementById('arrow-'+k);
+  const open = body.classList.toggle('open');
+  arrow.textContent = open ? '▲' : '▼';
+}
+
+function setScore(catId, i, score) {
+  const k = K(catId,i);
+  ST.scores[k] = score;
+  // Update just this card's classes and buttons
+  const card = document.getElementById('icard-'+k);
+  if (card) {
+    card.className = 'item-card '+(score===1?'scored-1':score===2?'scored-2':score===3?'scored-3':'scored-na');
+    card.querySelectorAll('.score-btn').forEach((btn,bi)=>{
+      btn.className = 'score-btn'+(score===bi+1?' active-'+(bi+1):'');
+    });
+    card.querySelector('.btn-na').className = 'btn-na'+(score==='na'?' na-on':'');
+  }
+  updateChip();
+  renderList();
+}
+
+function setNote(catId, i, val) {
+  ST.notes[K(catId,i)] = val;
+}
+
+function addPhotos(k, input) {
+  const files = Array.from(input.files);
+  if (!ST.photos[k]) ST.photos[k] = [];
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      ST.photos[k].push(e.target.result);
+      refreshPhotoGrid(k);
+      updateChip();
+      renderList();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function refreshPhotoGrid(k) {
+  const grid = document.getElementById('photos-'+k);
+  if (!grid) return;
+  const photos = ST.photos[k]||[];
+  // Extract the cat/item from key
+  const [catId, iStr] = k.split('_');
+  grid.innerHTML = photos.map((p,pi)=>`
+    <div class="photo-wrapper">
+      <img src="${p}" onclick="viewPhoto('${p}')" />
+      <button class="photo-del" onclick="deletePhoto('${k}',${pi})">×</button>
+    </div>`).join('')+
+  `<label class="btn-add-photo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <span>Ajouter</span>
+    <input type="file" accept="image/*" capture="environment" multiple onchange="addPhotos('${k}',this)">
+  </label>`;
+  // Update badge
+  const toggle = grid.closest('.item-extras').querySelector('.extras-toggle');
+  const extrasCount = ((ST.notes[k]||'')?1:0)+photos.length;
+  const badgeEl = toggle.querySelector('.badge');
+  if (extrasCount>0) {
+    if (badgeEl) badgeEl.textContent = extrasCount;
+    else {
+      const icons = toggle.querySelector('.toggle-icons');
+      const b = document.createElement('span');
+      b.className='badge'; b.textContent=extrasCount;
+      icons.insertBefore(b, icons.firstChild);
+    }
+  }
+}
+
+function deletePhoto(k, pi) {
+  if (!ST.photos[k]) return;
+  ST.photos[k].splice(pi,1);
+  refreshPhotoGrid(k);
+  updateChip();
+  renderList();
+}
+
+function viewPhoto(src) {
+  document.getElementById('viewer-img').src = src;
+  document.getElementById('photo-viewer').classList.add('open');
+}
+function closeViewer() {
+  document.getElementById('photo-viewer').classList.remove('open');
+}
+
+function nextCat() {
+  if (ST.currentCat < CATS.length-1) openCat(ST.currentCat+1);
+  else showSummary();
+}
+
+// ── SUMMARY ──
+function showSummary() {
+  const s = globalScore();
+  document.getElementById('sum-score-num').textContent = s||'—';
+  document.getElementById('sum-score-num').style.color = s ? scoreColor(parseFloat(s)) : '#fff';
+  if (s) {
+    const pct = parseFloat(s)/3;
+    document.getElementById('ring-fill').style.strokeDashoffset = 345.6*(1-pct);
+    document.getElementById('ring-fill').style.stroke = scoreColor(parseFloat(s));
+  }
+  const d = ST.date ? new Date(ST.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  document.getElementById('sum-meta').textContent = `${ST.store} · ${d}`;
+
+  document.getElementById('summary-rows').innerHTML = CATS.map(cat=>{
+    const sc = catScore(cat);
+    const sf = sc?parseFloat(sc):null;
+    const col = scoreColor(sf);
+    const photoCount = cat.items.reduce((n,_,i)=>{const p=ST.photos[K(cat.id,i)];return n+(p?p.length:0);},0);
+    return `<div class="summary-row">
+      <div class="sum-name">${cat.name}</div>
+      ${photoCount?`<div style="font-size:10px;color:#9B7B3A">📷${photoCount}</div>`:''}
+      <div class="sum-bar"><div class="sum-bar-fill" style="width:${sf?(sf/3*100)+'%':'0%'};background:${col}"></div></div>
+      <div class="sum-score" style="color:${col}">${sc||'—'}</div>
+    </div>`;
+  }).join('');
+  go('summary');
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const rows=[['Category','Item','Score','Notes','Photos count']];
+  CATS.forEach(cat=>{
+    cat.items.forEach((item,i)=>{
+      const k=K(cat.id,i);
+      rows.push([cat.name,item,ST.scores[k]||'',(ST.notes[k]||''),(ST.photos[k]||[]).length]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`StoreVisit_${ST.store.replace(/\s/g,'_')}_${ST.date||'export'}.csv`;
+  a.click();
+  toast('CSV exporté ✓');
+}
+
+// ── EXPORT PDF via jsPDF ──
+async function exportPDF() {
+  if (!window.jspdf) { toast('Chargement PDF…'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const PW = 210, PH = 297, ML = 14, MR = 14, CW = PW - ML - MR;
+  let y = 14;
+
+  const COL_GOLD = [155, 123, 58];
+  const COL_BLACK = [26, 22, 18];
+  const COL_WHITE = [255, 255, 255];
+  const COL_RED   = [184, 50, 50];
+  const COL_ORG   = [192, 112, 32];
+  const COL_GRN   = [42, 122, 78];
+  const COL_GRAY  = [120, 115, 108];
+  const COL_BGROW1= [255, 255, 255];
+  const COL_BGROW2= [245, 242, 236];
+
+  const chk = (need=10) => { if (y + need > PH - 14) { doc.addPage(); y = 14; } };
+
+  // ── HEADER BAND ──
+  doc.setFillColor(...COL_BLACK);
+  doc.rect(0, 0, PW, 22, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...COL_WHITE);
+  doc.text('DOLCE & GABBANA', ML, 10);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...COL_GOLD);
+  doc.text('STORE VISIT REPORT', ML, 16);
+
+  // Global score badge
+  const gs = globalScore();
+  if (gs) {
+    doc.setFillColor(...COL_GOLD);
+    doc.roundedRect(PW - MR - 26, 5, 26, 12, 2, 2, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...COL_WHITE);
+    doc.text(gs + ' / 3', PW - MR - 13, 13, { align:'center' });
+  }
+  y = 28;
+
+  // ── META ──
+  const d = ST.date ? new Date(ST.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...COL_BLACK);
+  doc.text(`${ST.store}   ·   ${d}   ·   ${ST.a1}${ST.a2 ? ' & '+ST.a2 : ''}`, ML, y);
+  y += 3;
+  doc.setDrawColor(...COL_GOLD);
+  doc.setLineWidth(0.4);
+  doc.line(ML, y, PW - MR, y);
+  y += 8;
+
+  // ── CATEGORIES ──
+  const COL_W = [CW*0.52, 14, CW*0.36, 14]; // critère, score, notes, photos
+  const COL_X = [ML, ML+COL_W[0]+1, ML+COL_W[0]+COL_W[1]+2, ML+COL_W[0]+COL_W[1]+COL_W[2]+3];
+
+  for (const cat of CATS) {
+    const cs = catScore(cat);
+    chk(18);
+
+    // Category header
+    doc.setFillColor(...COL_BLACK);
+    doc.rect(ML, y, CW, 7, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...COL_WHITE);
+    doc.text(cat.name.toUpperCase(), ML+3, y+4.8);
+    if (cs) {
+      doc.setTextColor(...COL_GOLD);
+      doc.text(cs, PW - MR - 3, y+4.8, { align:'right' });
+    }
+    y += 7;
+
+    // Column headers
+    doc.setFillColor(42, 42, 42);
+    doc.rect(ML, y, CW, 5, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(6);
+    doc.setTextColor(...COL_GOLD);
+    ['CRITÈRE','SCORE','NOTES / OBSERVATIONS','📷'].forEach((h,ci)=>{
+      doc.text(h, COL_X[ci]+1, y+3.5);
+    });
+    y += 5;
+
+    // Items
+    for (let i=0; i<cat.items.length; i++) {
+      const k = K(cat.id, i);
+      const sc = ST.scores[k];
+      const note = ST.notes[k]||'';
+      const pc = (ST.photos[k]||[]).length;
+
+      // Measure row height
+      doc.setFontSize(7.5);
+      const itemLines = doc.splitTextToSize(cat.items[i], COL_W[0]-2);
+      const noteLines = note ? doc.splitTextToSize(note, COL_W[2]-2) : [];
+      const rowH = Math.max(itemLines.length, noteLines.length||1) * 3.8 + 3;
+
+      chk(rowH);
+
+      const bg = i%2===0 ? COL_BGROW1 : COL_BGROW2;
+      doc.setFillColor(...bg);
+      doc.rect(ML, y, CW, rowH, 'F');
+      doc.setDrawColor(220,216,206);
+      doc.setLineWidth(0.1);
+      doc.line(ML, y+rowH, ML+CW, y+rowH);
+
+      // Item text
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...COL_BLACK);
+      doc.text(itemLines, COL_X[0]+1, y+3.5);
+
+      // Score
+      let scColor = COL_GRAY;
+      let scText = sc ? String(sc).toUpperCase() : '—';
+      if (sc===1) scColor=COL_RED;
+      else if (sc===2) scColor=COL_ORG;
+      else if (sc===3) scColor=COL_GRN;
+      else if (sc==='na') scColor=COL_GRAY;
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...scColor);
+      doc.text(scText, COL_X[1]+COL_W[1]/2, y+rowH/2+1, { align:'center' });
+
+      // Notes
+      if (note) {
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(7);
+        doc.setTextColor(80,75,68);
+        doc.text(noteLines, COL_X[2]+1, y+3.5);
+      }
+
+      // Photo count
+      if (pc>0) {
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...COL_GOLD);
+        doc.text(String(pc), COL_X[3]+COL_W[3]/2, y+rowH/2+1, { align:'center' });
+      }
+
+      y += rowH;
+    }
+    y += 4;
+  }
+
+  // ── FEEDBACK ──
+  const fb = document.getElementById('general-feedback').value.trim();
+  const td = document.getElementById('priority-todos').value.trim();
+
+  for (const [label, text] of [['GENERAL FEEDBACK', fb], ["PRIORITY TO DO'S", td]]) {
+    if (!text) continue;
+    chk(20);
+    doc.setFillColor(...COL_BLACK);
+    doc.rect(ML, y, CW, 7, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...COL_WHITE);
+    doc.text(label, ML+3, y+4.8);
+    y += 7;
+    doc.setFillColor(249, 247, 242);
+    doc.setDrawColor(...COL_GOLD);
+    doc.setLineWidth(0.5);
+    const fbLines = doc.splitTextToSize(text, CW-8);
+    const fbH = fbLines.length * 4 + 4;
+    chk(fbH);
+    doc.rect(ML, y, CW, fbH, 'F');
+    doc.line(ML, y, ML, y+fbH);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(50,45,40);
+    doc.text(fbLines, ML+4, y+4);
+    y += fbH + 5;
+  }
+
+  // ── PHOTOS ANNEX ──
+  const allPhotos = [];
+  CATS.forEach(cat=>{
+    cat.items.forEach((item,i)=>{
+      (ST.photos[K(cat.id,i)]||[]).forEach(src=>allPhotos.push({cat:cat.name,item,src}));
+    });
+  });
+
+  if (allPhotos.length) {
+    doc.addPage();
+    y = 14;
+    doc.setFillColor(...COL_BLACK);
+    doc.rect(0,0,PW,14,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...COL_WHITE);
+    doc.text(`PHOTOS ANNEXÉES (${allPhotos.length})`, ML, 9.5);
+    y = 20;
+
+    const THUMB = 44;
+    const GAP = 5;
+    const PER_ROW = Math.floor((CW + GAP) / (THUMB + GAP));
+
+    for (let pi=0; pi<allPhotos.length; pi++) {
+      const col = pi % PER_ROW;
+      if (col===0 && pi>0) y += THUMB + 12;
+      chk(THUMB + 14);
+      if (col===0 && pi>0 && y + THUMB + 14 > PH-14) { doc.addPage(); y=14; }
+      const x = ML + col*(THUMB+GAP);
+      try {
+        const fmt = allPhotos[pi].src.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(allPhotos[pi].src, fmt, x, y, THUMB, THUMB);
+        doc.setDrawColor(200,196,188);
+        doc.setLineWidth(0.2);
+        doc.rect(x, y, THUMB, THUMB);
+      } catch(e) { /* skip bad image */ }
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(6);
+      doc.setTextColor(...COL_GRAY);
+      const cap = doc.splitTextToSize(allPhotos[pi].cat, THUMB);
+      doc.text(cap[0], x, y+THUMB+3.5);
+    }
+  }
+
+  // ── PAGE NUMBERS ──
+  const total = doc.getNumberOfPages();
+  for (let p=1; p<=total; p++) {
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...COL_GRAY);
+    doc.text(`${p} / ${total}`, PW-MR, PH-6, { align:'right' });
+    doc.text('D&G Store Visit Report — Confidentiel', ML, PH-6);
+  }
+
+  const fname = `StoreVisit_${ST.store.replace(/\s/g,'_')}_${ST.date||'export'}.pdf`;
+  doc.save(fname);
+  toast('PDF téléchargé ✓');
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+// ── iOS install banner (shown only in Safari, not standalone) ──
+window.addEventListener('load', () => {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isIOS && !isStandalone) {
+    setTimeout(() => {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1A1612;color:#F7F4EF;padding:14px 16px 28px;font-family:sans-serif;font-size:12px;z-index:9999;border-top:1px solid #B8963E;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.4)';
+      banner.innerHTML = `<img src="icons/icon-60.png" style="width:40px;height:40px;border-radius:9px;flex-shrink:0">
+        <div style="flex:1"><strong style="color:#C9A85C;display:block;margin-bottom:3px">Installer l'application</strong>
+        Appuyez sur <strong style="color:#fff">⎙ Partager</strong> puis <strong style="color:#fff">"Sur l'écran d'accueil"</strong></div>
+        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#666;font-size:24px;cursor:pointer;flex-shrink:0">✕</button>`;
+      document.body.appendChild(banner);
+    }, 2500);
+  }
+});
+</script>
+</body>
+</html>
