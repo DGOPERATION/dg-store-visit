@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Store Visit">
 <meta name="theme-color" content="#0A0A0A">
 <meta name="application-name" content="D&G Store Visit">
@@ -25,6 +25,10 @@
 <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
 <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+
+<!-- Apple Splash Screens -->
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px)" href="icons/splash-iphone.png">
+<link rel="apple-touch-startup-image" href="icons/splash-iphone.png">
 
 <!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -64,21 +68,27 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  min-height: -webkit-fill-available;
   font-size: 14px;
   line-height: 1.5;
+  /* Side safe areas */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* ── HEADER ── */
 .app-header {
   background: var(--text);
-  padding: 12px 20px 12px;
-  padding-top: calc(12px + env(safe-area-inset-top));
+  padding: 10px 20px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
+  margin-top: calc(-1 * env(safe-area-inset-top));
+  border-top: env(safe-area-inset-top) solid var(--text);
   border-bottom: 1px solid rgba(184,150,62,0.25);
 }
 .header-left { display: flex; align-items: center; gap: 10px; }
@@ -185,8 +195,7 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text3);
-  padding: 12px 16px 8px;
-  background: var(--bg);
+  padding: 20px 16px 8px;
 }
 .cat-list { padding: 0 16px 100px; display: flex; flex-direction: column; gap: 8px; }
 
@@ -668,9 +677,7 @@ select.form-input { appearance: none; background-image: url("data:image/svg+xml,
 
 <!-- ═══ SCREEN: LIST ═══ -->
 <div class="screen" id="screen-list">
-  <div style="padding: 14px 16px 10px; background: var(--surface); border-bottom: 1px solid var(--border);">
-    <div style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2);" id="list-info">12 catégories</div>
-  </div>
+  <div class="section-label" id="list-info">12 catégories</div>
   <div class="cat-list" id="cat-list"></div>
   <div class="bottom-bar">
     <button class="btn-back" onclick="go('intro')">← Infos</button>
@@ -838,6 +845,19 @@ const CATS = [
     'Make up (light and natural) and hair style coherent with corporate grooming guidelines',
     'Tattoos not visible on face — piercings discreet and not distracting',
     'No personal jewellery or competitor watches (smart watches are allowed — DG eyewear frames mandatory)'
+  ]},
+  { id:'hospitality', name:'Hospitality Kit', items:[
+    'Hospitality kit clean, prepared and fully stocked at all times (tray, coasters, napkins, glasses, porcelain set)',
+    'DG branded items present: DG logo coasters, DG logo napkins, white porcelain set with logo',
+    'Centralized procurement items available: Franciacorta Ca\' del Bosco 375ml, DG dark chocolate 74%, Marco Colzani juices (Mango, Orange, Pineapple)',
+    'Local procurement items stocked: San Pellegrino 250ml, Acqua Panna 250ml, soft drinks, coffee, tea, sugar bags',
+    'Water & soft drinks service: bottle logo client-facing, glass on DG coaster, DG logo client-facing, napkin placed as per standard',
+    'Coffee service: small cup, spoon on right, sugar top-left, DG chocolate bottom-left, water always included',
+    'Tea service: bigger spoon on right, sugar top-left, separate plate for tea bag, tea pot 3/4 full hot water',
+    'Franciacorta served cold, glass 1/3 full, opened gently in front of client — reserved for VIP/high-value appointments',
+    'Beverage offered at second stage of selling ceremony (appointment, try-on, closing) — not upon entry',
+    'Service: right-hand side, slow/silent/controlled movements, tray on display or fitting room surface only',
+    'After service: items removed promptly and discreetly — brought to BOH for cleaning'
   ]}
 ];
 
