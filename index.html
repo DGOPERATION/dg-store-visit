@@ -873,6 +873,28 @@ const K = (cid,i) => `${cid}_${i}`;
 
 document.getElementById('visit-date').value = new Date().toISOString().split('T')[0];
 
+// ── RESTORE DRAFT ──
+window.addEventListener('DOMContentLoaded', function() {
+  const restored = loadDraft();
+  if (restored) {
+    if (ST.date) document.getElementById('visit-date').value = ST.date;
+    if (ST.store) document.getElementById('visit-store').value = ST.store;
+    if (ST.a1) document.getElementById('visit-a1').value = ST.a1;
+    if (ST.a2) document.getElementById('visit-a2').value = ST.a2;
+    // Show banner
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#F5EDD8;border-bottom:2px solid #C9A85C;padding:10px 16px;font-size:12px;color:#9B7B3A;display:flex;align-items:center;justify-content:space-between;';
+    banner.innerHTML = '<span>📋 Brouillon du jour restauré</span><button onclick="clearDraft();this.parentElement.remove();" style="background:none;border:1px solid #C9A85C;border-radius:6px;padding:3px 8px;font-size:11px;color:#9B7B3A;cursor:pointer;">Effacer</button>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  // Autosave on field changes
+  document.getElementById('visit-date').addEventListener('change', function() { ST.date = this.value; autosave(); });
+  document.getElementById('visit-store').addEventListener('change', function() { ST.store = this.value; autosave(); });
+  document.getElementById('visit-a1').addEventListener('input', function() { ST.a1 = this.value; autosave(); });
+  document.getElementById('visit-a2').addEventListener('input', function() { ST.a2 = this.value; autosave(); });
+});
+
 // ── NAV ──
 function go(screen) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1018,9 +1040,52 @@ function toggleExtras(k) {
   arrow.textContent = open ? '▲' : '▼';
 }
 
+// ── AUTOSAVE ──
+const SAVE_KEY = 'dg_store_visit_draft';
+
+function autosave() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      date: ST.date,
+      store: ST.store,
+      a1: ST.a1,
+      a2: ST.a2,
+      scores: ST.scores,
+      notes: ST.notes,
+      currentCat: ST.currentCat,
+      savedAt: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    // Vérifier que le brouillon date d'aujourd'hui
+    const savedDate = d.date || '';
+    const today = new Date().toISOString().split('T')[0];
+    if (savedDate !== today) return false;
+    ST.date = d.date || '';
+    ST.store = d.store || '';
+    ST.a1 = d.a1 || '';
+    ST.a2 = d.a2 || '';
+    ST.scores = d.scores || {};
+    ST.notes = d.notes || {};
+    ST.currentCat = d.currentCat || 0;
+    return true;
+  } catch(e) { return false; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
 function setScore(catId, i, score) {
   const k = K(catId,i);
   ST.scores[k] = score;
+  autosave();
   // Update just this card's classes and buttons
   const card = document.getElementById('icard-'+k);
   if (card) {
@@ -1036,6 +1101,7 @@ function setScore(catId, i, score) {
 
 function setNote(catId, i, val) {
   ST.notes[K(catId,i)] = val;
+  autosave();
 }
 
 function addPhotos(k, input) {
@@ -1387,6 +1453,7 @@ async function exportPDF() {
 
   const fname = `StoreVisit_${ST.store.replace(/\s/g,'_')}_${ST.date||'export'}.pdf`;
   doc.save(fname);
+  clearDraft(); // Brouillon effacé après export réussi
   toast('PDF téléchargé ✓');
 }
 
